@@ -1,26 +1,14 @@
 import React, { useState, useEffect, useCallback, ReactElement, forwardRef, useImperativeHandle } from 'react'
 import { Form, Table, Select, DatePicker, Button, Popconfirm, message, Divider, Row, Col } from 'antd'
-import { FormComponentProps } from 'antd/es/form';
 import CustomerBreadcrumb from '../../components/CustomerBreadcrumb'
 import { priceTypeList, auditStatusList, opTypeList } from './constant'
 import { getListApi, Record, ListData, } from './api'
 import { ResponseData } from '../../util/request_ts'
 import './index.less'
-
 import { arrToObj } from './util'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
-
-// type MyList = ListData<Record>
-
-
-// const PriceVerify = forwardRef<FormComponentProps, FCFormProps>(({ form, onSubmit }, ref) => {
-//   useImperativeHandle(ref, () => ({
-//     form,
-//   }));
-//   `...the rest of your form`;
-// });
 
 const formItemLayout = {
   labelCol: {
@@ -36,33 +24,34 @@ const ReactFC = (props: any) => {
   const [data, setData] = useState<Array<Record>>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState({ page: 1, size: 10 })
-
   const dateFormat = 'YYYY-MM-DD HH:mm:ss'
+
   useEffect(() => {
-    const getList = async () => {
-      const values = getFieldsValue()
-      const sendData = {
-        page: page.page,
-        size: page.size,
-        price_type: values.price_type,
-        audit_status: values.audit_status,
-        audit_start_time:
-          values["time"] && values["time"].length > 0
-            ? values["time"][0].format(dateFormat)
-            : "", // 开始时间
-        audit_end_time:
-          values["time"] && values["time"].length > 0
-            ? values["time"][1].format(dateFormat)
-            : "", // 结束时间
-      }
-      let res: ResponseData<ListData<Record>>
-      res = await getListApi<ListData<Record>>(sendData).then()
-      if (res.error !== 0) return message.error(res.msg)
-      setData(res.data.lists)
-      setTotal(res.data.total)
-    }
     getList()
   }, [page])
+
+  const getList = async () => {
+    const values = getFieldsValue()
+    const sendData = {
+      page: page.page,
+      size: page.size,
+      price_type: values.price_type,
+      audit_status: values.audit_status,
+      audit_start_time:
+        values["time"] && values["time"].length > 0
+          ? values["time"][0].format(dateFormat)
+          : "", // 开始时间
+      audit_end_time:
+        values["time"] && values["time"].length > 0
+          ? values["time"][1].format(dateFormat)
+          : "", // 结束时间
+    }
+    let res: ResponseData<ListData<Record>>
+    res = await getListApi<ListData<Record>>(sendData).then()
+    if (res.error !== 0) return message.error(res.msg)
+    setData(res.data.lists)
+    setTotal(res.data.total)
+  }
 
   const submit = useCallback(
     () => {

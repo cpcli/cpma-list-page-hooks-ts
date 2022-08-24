@@ -1,8 +1,6 @@
 import send, { ResponseData } from "../../util/request_ts"
 import { toLineObj } from '../../util/convert'
-
 import { AxiosResponse } from 'axios'
-// export type {ResponseData} from "../../util/request"
 export interface Record {
   [key: string]: any
 }
@@ -12,13 +10,10 @@ export interface ListData<U> { // data error msg 里的data
   total: number
 }
 
-// type List = ListData<Record>
-
 interface InfoRecord {
   [k: string]: any
 }
 export interface Info {
-  // [key: string]: any
   lists: InfoRecord[],
   count: any,
   invalid: any,
@@ -32,8 +27,6 @@ export interface Info {
   total: string | number
 }
 
-// type ResponseDataType = ResponseData<ListData<Record>>
-
 export function getListApi<T>(params = {}) {
   return new Promise((resolve, reject) => {
     send<T>({
@@ -43,11 +36,8 @@ export function getListApi<T>(params = {}) {
     }).then((res: AxiosResponse<ResponseData<T>>) => { // data error msg AxiosResponse<ResponseData<T>>  
       let { data: { data, error, msg } } = res
       if (error === 0) {
-        // resolve({ data, error, msg })
-        // res.data.data error msg
         resolve(res.data)
       } else {
-        // resolve({ data: [], error, msg })
         resolve(res.data)
       }
     }).catch(e => {
