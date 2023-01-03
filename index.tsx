@@ -22,17 +22,12 @@ const addShow = () => {
 }
 
 const ReactFC:React.FC<any> = (props) => {
-  const authCompanyId = +!window.localStorage.getItem('authCompanyId')
   const { getFieldDecorator, resetFields, setFieldsValue, getFieldsValue, validateFields } = props.form
   const [data, setData] = useState<Array<Record>>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState({ page: 1, size: 10 })
   const [search, setSearch] = useState({})
 
-  const cachePage = useRef({})
-  const cacheFormValues = useRef({})
-
-  const dateFormat = 'YYYY-MM-DD HH:mm:ss'
 
   useEffect(() => {
     let pagination = listPageParams.getParams(props);
@@ -135,7 +130,7 @@ const ReactFC:React.FC<any> = (props) => {
         }else{
           renderText = str
         }
-        return <Popover content={text}>{renderText}</Popover>
+        return <Popover content={str}>{renderText}</Popover>
       }
     },
     {
