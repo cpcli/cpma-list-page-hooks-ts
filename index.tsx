@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useCallback, ReactElement, forwardRef, useImperativeHandle } from 'react'
-import { Form, Table, Select, DatePicker, Button, Popconfirm, message, Divider, Row, Col } from 'antd'
+import React, { useState, useEffect, useCallback, ReactElement, useRef } from 'react'
+import { Form, Table, Select, DatePicker, Button, Popconfirm, message, Divider, Row, Col, Switch, Popover } from 'antd'
 import CustomerBreadcrumb from '../../components/CustomerBreadcrumb'
-import { priceTypeList, auditStatusList, opTypeList } from './constant'
-import { getListApi, Record, ListData, } from './api'
+import { rolesList } from './constant'
+import { getListApi,changeStatusApi,  Record, ListData,RelationUserListInterface } from './api'
 import { ResponseData } from '../../util/request_ts'
 import './index.less'
-import { arrToObj } from './util'
-
-const { RangePicker } = DatePicker
-const { Option } = Select
+import {listPageParams} from '../../util/storeParmas'
+import { arrToObj } from './utils'
+import ShowManager from '../../components/ShowManager'
 
 const formItemLayout = {
   labelCol: {
@@ -18,39 +17,58 @@ const formItemLayout = {
     span: 18,
   },
 };
+const addShow = () => {
+  return +!window.localStorage.getItem('authCompanyId') !== 1
+}
 
-const ReactFC = (props: any) => {
+const ReactFC:React.FC<any> = (props) => {
+  const authCompanyId = +!window.localStorage.getItem('authCompanyId')
   const { getFieldDecorator, resetFields, setFieldsValue, getFieldsValue, validateFields } = props.form
   const [data, setData] = useState<Array<Record>>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState({ page: 1, size: 10 })
+  const [search, setSearch] = useState({})
+
+  const cachePage = useRef({})
+  const cacheFormValues = useRef({})
+
   const dateFormat = 'YYYY-MM-DD HH:mm:ss'
 
   useEffect(() => {
-    getList()
-  }, [page])
+    let pagination = listPageParams.getParams(props);
+    if (pagination) {
+      let { currentPage: page, pageSize: size } = pagination;
+      setPage({ page, size });
+    } else {
+      getList()
+    }
+  }, [page, search])
 
   const getList = async () => {
     const values = getFieldsValue()
     const sendData = {
       page: page.page,
-      size: page.size,
-      price_type: values.price_type,
-      audit_status: values.audit_status,
-      audit_start_time:
-        values["time"] && values["time"].length > 0
-          ? values["time"][0].format(dateFormat)
-          : "", // 开始时间
-      audit_end_time:
-        values["time"] && values["time"].length > 0
-          ? values["time"][1].format(dateFormat)
-          : "", // 结束时间
+      page_size: page.size,
     }
     let res: ResponseData<ListData<Record>>
     res = await getListApi<ListData<Record>>(sendData).then()
     if (res.error !== 0) return message.error(res.msg)
-    setData(res.data.lists)
+    setData(res.data.data)
     setTotal(res.data.total)
+  }
+  const handleSwitch = async (val: boolean, record: Record) => {
+    const sendData = {
+      task_group_id: record.task_group_id,
+      status: val ? 1 : 2,
+    }
+    let res: ResponseData<ListData<Record>>
+    res = await changeStatusApi(sendData).then()
+    if (res.error !== 0){
+      message.error(res.msg)
+    }else{
+      message.success(res.msg)
+    }
+    setSearch({})
   }
 
   const submit = useCallback(
@@ -78,82 +96,77 @@ const ReactFC = (props: any) => {
     },
     [],
   )
-  const verify = (record: Record) => {
-    props.history.push(`/price/priceverify/verify/${record.id}`)
+  const add = (record: Record) => {
+    props.history.push(`/salesman/todoList/add`)
+  }
+  const edit = (record: Record) => {
+    let pagination = { currentPage: page.page, pageSize: page.size };
+    listPageParams.setParams( props, pagination );
+    props.history.push(`/salesman/todoList/edit/${record.task_group_id}`)
   }
   const view = (record: Record) => {
-    props.history.push(`/price/priceverify/view/${record.id}`)
+    let pagination = { currentPage: page.page, pageSize: page.size };
+    listPageParams.setParams( props, pagination );
+    props.history.push(`/salesman/todoList/view/${record.task_group_id}`)
   }
   const columns = [
     {
-      title: '定价类型',
-      dataIndex: 'price_type',
+      title: '任务组名',
+      dataIndex: 'task_group_name',
+      align: 'center' as 'center'
+    },
+    {
+      title: '角色',
+      dataIndex: 'task_user_type',
       align: 'center' as 'center',
       render: (text: string, record: Record) => {
-        return arrToObj(priceTypeList)[text]
+        return arrToObj(rolesList)[text]
       }
     },
     {
-      title: '操作类型',
-      dataIndex: 'op_type',
+      title: '成员',
+      dataIndex: 'relation_user_list',
       align: 'center' as 'center',
-      render: (text: string, record: Record) => {
-        return arrToObj(opTypeList)[text]
-      }
-    },
-    {
-      title: '提交审核时间',
-      dataIndex: 'create_time',
-      align: 'center' as 'center',
-      render: (text: string, record: Record) => {
-        if (!text) {
-          return '-'
+      render: (text: RelationUserListInterface[], record: Record) => {
+        let str: string = text.map(item => item.full_name).join(',')
+        let renderText = ''
+        if(str.length > 12){
+          renderText = str.slice(0,12) + '...'
+        }else{
+          renderText = str
         }
-        return text
+        return <Popover content={text}>{renderText}</Popover>
       }
     },
     {
-      title: '审核人',
-      dataIndex: 'audit_user_name',
+      title: '启用状态',
+      dataIndex: 'status',
       align: 'center' as 'center',
-    },
-    {
-      title: '审核时间',
-      dataIndex: 'audit_time',
-      align: 'center' as 'center',
-      render: (text: string, record: Record) => {
-        if (!text) {
-          return '-'
-        }
-        return text
-      }
-    },
-    {
-      title: '审核状态',
-      dataIndex: 'audit_status',
-      align: 'center' as 'center',
-      render: (text: string, record: Record) => {
-        return arrToObj(auditStatusList)[text]
-      }
+      width: 100,
+      render: (val: number, record: Record) => (
+        <Switch
+          defaultChecked={val === 1 ? true:false}
+          onChange={(val) => { handleSwitch(val, record) }}
+        />
+      )
     },
     {
       title: '操作',
       dataIndex: 'op',
       align: 'center' as 'center',
-      width: 210,
       render: (text: string, record: Record): ReactElement => {
-        const { audit_status } = record
-        const op = 1 * audit_status === 1 ? <span className='priceverify-list-op-style' onClick={() => { verify(record) }}>审核</span>
-          : <span className='priceverify-list-op-style' onClick={() => { view(record) }}>查看</span>
-        return op
+        const { } = record
+        return <>
+          <a onClick={ () => edit( record)}>编辑</a>
+          <Divider type='vertical' />
+          <a onClick={ () => view( record) }>查看</a>
+        </>
       }
-    },
+    }
   ]
-
-
   return <>
     <CustomerBreadcrumb className="breadcrumb"></CustomerBreadcrumb>
-    <Form style={{ backgroundColor: "#fff" }}  {...formItemLayout}>
+    {/* <Form style={{ backgroundColor: "#fff" }}  {...formItemLayout}>
       <Row style={{ padding: '24px 24px 0' }}>
         <Col span={6}>
           <Form.Item label='定价类型'>
@@ -164,7 +177,7 @@ const ReactFC = (props: any) => {
                 style={{ width: "90%" }}
                 placeholder="请选择定价类型"
               >
-                {priceTypeList.map((item, index) => {
+                {rolesList.map((item, index) => {
                   return (
                     <Option
                       value={item.value}
@@ -187,7 +200,7 @@ const ReactFC = (props: any) => {
                 style={{ width: "90%" }}
                 placeholder="请选择审核状态"
               >
-                {auditStatusList.map((item, index) => {
+                {rolesList.map((item, index) => {
                   return (
                     <Option
                       value={item.value}
@@ -231,23 +244,34 @@ const ReactFC = (props: any) => {
           </Button>
         </Col>
       </Row>
-    </Form>
-    <Table
-      style={{ marginTop: '10px', backgroundColor: '#fff', padding: '24px' }}
-      rowKey={(record) => record.id}
-      bordered
-      scroll={{ y: 800 }}
-      dataSource={data}
-      columns={columns}
-      pagination={{
-        pageSize: page.size,
-        total: total,
-        current: page.page,
-        onChange: onPageChange,
-        showSizeChanger: true,
-        onShowSizeChange: onShowSizeChange
-      }}
-    />
+    </Form> */}
+    <div style={{ backgroundColor: "#fff",paddingTop:'24px' }}>
+      <Row style={{ paddingLeft: 24 }}>
+        <Col span={24}>
+          <ShowManager show={addShow}>
+            <Button type="primary" onClick={add}>
+              添加
+            </Button>
+          </ShowManager>
+        </Col>
+      </Row>
+      <Table
+        style={{ padding: '24px' }}
+        rowKey={(record) => record.id}
+        bordered
+        scroll={{ y: 800 }}
+        dataSource={data}
+        columns={columns}
+        pagination={{
+          pageSize: page.size,
+          total: total,
+          current: page.page,
+          onChange: onPageChange,
+          showSizeChanger: true,
+          onShowSizeChange: onShowSizeChange
+        }}
+      />
+    </div>
   </>
 }
 
