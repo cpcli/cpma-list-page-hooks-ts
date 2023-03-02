@@ -278,7 +278,7 @@ const ReactFC = (props: any) => {
         // 40 运行中 
         // 50 已结束
 
-        // 0 审核拒绝 1 禁用 10 新建待审核 20 审核通过 30 待生效 40 已生效 50 已结束
+        // 0 审核拒绝 1 禁用 10 新建待审核 20 审核通过 30 待生效 40 运行中 50 已结束
         const opStyle = { color: '#1890ff', cursor: 'pointer', wordBreak: 'keep-all' } as React.CSSProperties
         
         type Key = 1 | 2 | 3 | 4 | 5 | number
@@ -298,7 +298,7 @@ const ReactFC = (props: any) => {
         }
         type TextKey = 1 | 2 | 5 | number
         const popConfirmStatus = [1, 2, 5] // 发布 删除 禁用 opTypeMap 1、2、5
-        const popConfirmStatusText: {[key: TextKey]: string} = { 1: '发布', 2: '删除', 5: '禁用' } // 发布 删除  禁用 opTypeMap 1、2、5
+        const popConfirmStatusText: {[key: TextKey]: string} = { 1: '发布', 2: '删除该公告', 5: '禁用' } // 发布 删除  禁用 opTypeMap 1、2、5
         const { status } = record
         let ops = OpsMap[status] // 按钮集合
         ops = ops.filter((item: number) => { // 战区子公司没有 发布 删除 编辑 禁用 按钮
